@@ -7,57 +7,67 @@ interface ShitterToken {
   created_at: string;
 }
 
-interface DexScreenerPair {
-  chainId: string;
-  dexId: string;
-  pairAddress: string;
-  baseToken: {
+interface GeckoTerminalToken {
+  id: string;
+  type: string;
+  attributes: {
     address: string;
     name: string;
     symbol: string;
+    price_usd: string;
+    fdv_usd: string;
+    total_reserve_in_usd: string;
+    volume_usd: {
+      h24: string;
+    };
+    market_cap_usd: string;
   };
-  quoteToken: {
-    address: string;
-    name: string;
-    symbol: string;
+  relationships: {
+    top_pools: {
+      data: Array<{
+        id: string;
+        type: string;
+      }>;
+    };
   };
-  priceNative: string;
-  priceUsd: string | null;
-  txns: {
-    m5: { buys: number; sells: number };
-    h1: { buys: number; sells: number };
-    h6: { buys: number; sells: number };
-    h24: { buys: number; sells: number };
-  };
-  volume: {
-    h24: number;
-    h6: number;
-    h1: number;
-    m5: number;
-  };
-  priceChange: {
-    m5: number;
-    h1: number;
-    h6: number;
-    h24: number;
-  };
-  liquidity: {
-    usd: number | null;
-    base: number;
-    quote: number;
-  };
-  fdv: number | null;
-  marketCap: number | null;
-  pairCreatedAt: number;
 }
 
-interface DexScreenerCandle {
-  timestamp: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
+interface GeckoTerminalPool {
+  id: string;
+  type: string;
+  attributes: {
+    base_token_price_usd: string;
+    address: string;
+    name: string;
+    pool_created_at: string;
+    fdv_usd: string;
+    market_cap_usd: string | null;
+    price_change_percentage: {
+      m5: string;
+      m15: string;
+      m30: string;
+      h1: string;
+      h6: string;
+      h24: string;
+    };
+    transactions: {
+      m5: { buys: number; sells: number; buyers: number; sellers: number };
+      m15: { buys: number; sells: number; buyers: number; sellers: number };
+      m30: { buys: number; sells: number; buyers: number; sellers: number };
+      h1: { buys: number; sells: number; buyers: number; sellers: number };
+      h6: { buys: number; sells: number; buyers: number; sellers: number };
+      h24: { buys: number; sells: number; buyers: number; sellers: number };
+    };
+    volume_usd: {
+      m5: string;
+      m15: string;
+      m30: string;
+      h1: string;
+      h6: string;
+      h24: string;
+    };
+    reserve_in_usd: string;
+  };
 }
 
 interface EnrichedToken extends ShitterToken {
@@ -101,19 +111,75 @@ export async function GET() {
     
     const tokens: ShitterToken[] = await tokensRes.json();
     
-    // Enrich each token with DexScreener data
+    // Enrich each token with GeckoTerminal data
     const enrichedTokens: EnrichedToken[] = await Promise.all(
       tokens.map(async (token) => {
         try {
-          const dsRes = await fetch(
-            `https://api.dexscreener.com/token-pairs/v1/solana/${token.address}`,
+          // First, get token info to find top pools
+          const tokenRes = await fetch(
+            `https://api.geckoterminal.com/api/v2/networks/solana/tokens/${token.address}?include=top_pools`,
             { next: { revalidate: 10 } }
           );
           
-          if (!dsRes.ok) {
+          let topPoolAddress: string | null = null;
+          let tokenPriceUsd: string | null = null;
+          
+          if (tokenRes.ok) {
+            const tokenData: { data: GeckoTerminalToken; included?: GeckoTerminalPool[] } = await tokenRes.json();
+            tokenPriceUsd = tokenData.data.attributes.price_usd || null;
+            
+            // Get the first/top pool from the relationships
+            const topPool = tokenData.data.relationships.top_pools.data[0];
+            if (topPool) {
+              topPoolAddress = topPool.id.replace('solana_', '');
+            }
+            
+            // Also check included pools for more details
+            if (tokenData.included && tokenData.included.length > 0) {
+              const firstPool = tokenData.included[0];
+              if (firstPool.type === 'pool') {
+                topPoolAddress = firstPool.id.replace('solana_', '');
+              }
+            }
+          }
+          
+          // If we have a pool address, fetch the full pool data
+          let poolData: GeckoTerminalPool | null = null;
+          if (topPoolAddress) {
+            try {
+              const poolRes = await fetch(
+                `https://api.geckoterminal.com/api/v2/networks/solana/pools/${topPoolAddress}`,
+                { next: { revalidate: 10 } }
+              );
+              
+              if (poolRes.ok) {
+                const poolResponse: { data: GeckoTerminalPool } = await poolRes.json();
+                poolData = poolResponse.data;
+              }
+            } catch (e) {
+              // Ignore pool fetch errors
+            }
+          }
+          
+          // If we have a token price but no pool data, use token-level data
+          if (!poolData && tokenPriceUsd) {
+            // Need to re-fetch to get FDV since it's on the token response
+            let fdv: number | null = null;
+            try {
+              const tokenRes2 = await fetch(
+                `https://api.geckoterminal.com/api/v2/networks/solana/tokens/${token.address}`,
+                { next: { revalidate: 10 } }
+              );
+              if (tokenRes2.ok) {
+                const tokenData2: { data: { attributes: { fdv_usd: string } } } = await tokenRes2.json();
+                fdv = parseFloat(tokenData2.data.attributes.fdv_usd || '0');
+              }
+            } catch (e) {
+              // Ignore
+            }
             return {
               ...token,
-              priceUsd: null,
+              priceUsd: tokenPriceUsd,
               priceNative: null,
               priceChange24h: 0,
               priceChange1h: 0,
@@ -124,7 +190,7 @@ export async function GET() {
               volume5m: 0,
               liquidity: null,
               marketCap: null,
-              fdv: null,
+              fdv: fdv,
               buys24h: 0,
               sells24h: 0,
               buys6h: 0,
@@ -139,66 +205,71 @@ export async function GET() {
             };
           }
           
-          const pairs: DexScreenerPair[] = await dsRes.json();
-          const pair = pairs[0]; // Get the first pair (usually highest liquidity)
-          
-          if (!pair) {
+          // Use pool data if available
+          if (poolData) {
+            const pool = poolData;
+            
+            // Parse transaction volumes
+            const txns = pool.attributes.transactions;
+            const vols = pool.attributes.volume_usd;
+            
             return {
               ...token,
-              priceUsd: null,
+              priceUsd: pool.attributes.base_token_price_usd || tokenPriceUsd,
               priceNative: null,
-              priceChange24h: 0,
-              priceChange1h: 0,
-              priceChange5m: 0,
-              volume24h: 0,
-              volume6h: 0,
-              volume1h: 0,
-              volume5m: 0,
-              liquidity: null,
-              marketCap: null,
-              fdv: null,
-              buys24h: 0,
-              sells24h: 0,
-              buys6h: 0,
-              sells6h: 0,
-              buys1h: 0,
-              sells1h: 0,
-              buys5m: 0,
-              sells5m: 0,
-              pairAddress: null,
-              dexId: null,
-              pairCreatedAt: null,
+              priceChange24h: parseFloat(pool.attributes.price_change_percentage.h24) || 0,
+              priceChange1h: parseFloat(pool.attributes.price_change_percentage.h1) || 0,
+              priceChange5m: parseFloat(pool.attributes.price_change_percentage.m5) || 0,
+              volume24h: parseFloat(vols.h24) || 0,
+              volume6h: parseFloat(vols.h6) || 0,
+              volume1h: parseFloat(vols.h1) || 0,
+              volume5m: parseFloat(vols.m5) || 0,
+              liquidity: parseFloat(pool.attributes.reserve_in_usd) || null,
+              marketCap: pool.attributes.market_cap_usd ? parseFloat(pool.attributes.market_cap_usd) : null,
+              fdv: pool.attributes.fdv_usd ? parseFloat(pool.attributes.fdv_usd) : null,
+              buys24h: txns.h24.buys || 0,
+              sells24h: txns.h24.sells || 0,
+              buys6h: txns.h6.buys || 0,
+              sells6h: txns.h6.sells || 0,
+              buys1h: txns.h1.buys || 0,
+              sells1h: txns.h1.sells || 0,
+              buys5m: txns.m5.buys || 0,
+              sells5m: txns.m5.sells || 0,
+              pairAddress: pool.attributes.address,
+              dexId: 'geckoterminal',
+              pairCreatedAt: pool.attributes.pool_created_at ? new Date(pool.attributes.pool_created_at).getTime() : null,
             };
           }
           
+          // Fallback if no pool data
           return {
             ...token,
-            priceUsd: pair.priceUsd,
-            priceNative: pair.priceNative,
-            priceChange24h: pair.priceChange?.h24 || 0,
-            priceChange1h: pair.priceChange?.h1 || 0,
-            priceChange5m: pair.priceChange?.m5 || 0,
-            volume24h: pair.volume?.h24 || 0,
-            volume6h: pair.volume?.h6 || 0,
-            volume1h: pair.volume?.h1 || 0,
-            volume5m: pair.volume?.m5 || 0,
-            liquidity: pair.liquidity?.usd || null,
-            marketCap: pair.marketCap || null,
-            fdv: pair.fdv || null,
-            buys24h: pair.txns?.h24?.buys || 0,
-            sells24h: pair.txns?.h24?.sells || 0,
-            buys6h: pair.txns?.h6?.buys || 0,
-            sells6h: pair.txns?.h6?.sells || 0,
-            buys1h: pair.txns?.h1?.buys || 0,
-            sells1h: pair.txns?.h1?.sells || 0,
-            buys5m: pair.txns?.m5?.buys || 0,
-            sells5m: pair.txns?.m5?.sells || 0,
-            pairAddress: pair.pairAddress,
-            dexId: pair.dexId,
-            pairCreatedAt: pair.pairCreatedAt || null,
+            priceUsd: tokenPriceUsd,
+            priceNative: null,
+            priceChange24h: 0,
+            priceChange1h: 0,
+            priceChange5m: 0,
+            volume24h: 0,
+            volume6h: 0,
+            volume1h: 0,
+            volume5m: 0,
+            liquidity: null,
+            marketCap: null,
+            fdv: null,
+            buys24h: 0,
+            sells24h: 0,
+            buys6h: 0,
+            sells6h: 0,
+            buys1h: 0,
+            sells1h: 0,
+            buys5m: 0,
+            sells5m: 0,
+            pairAddress: null,
+            dexId: null,
+            pairCreatedAt: null,
           };
         } catch (err) {
-          console.error(`Error fetching DexScreener data for ${token.address}:`, err);
+          console.error(`Error fetching GeckoTerminal data for ${token.address}:`, err);
           return {
             ...token,
             priceUsd: null,
