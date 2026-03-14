@@ -9,17 +9,29 @@ interface Token {
   priceUsd: string | null;
   priceNative: string | null;
   priceChange24h: number;
+  priceChange1h: number;
+  priceChange5m: number;
   volume24h: number;
+  volume6h: number;
+  volume1h: number;
+  volume5m: number;
   liquidity: number | null;
   marketCap: number | null;
   fdv: number | null;
   buys24h: number;
   sells24h: number;
+  buys6h: number;
+  sells6h: number;
+  buys1h: number;
+  sells1h: number;
+  buys5m: number;
+  sells5m: number;
   pairAddress: string | null;
   dexId: string | null;
+  pairCreatedAt: number | null;
 }
 
-type SortKey = 'name' | 'symbol' | 'priceUsd' | 'priceChange24h' | 'volume24h' | 'liquidity';
+type SortKey = 'name' | 'symbol' | 'priceUsd' | 'priceChange24h' | 'volume24h' | 'liquidity' | 'fdv' | 'marketCap';
 type SortDir = 'asc' | 'desc';
 
 function formatNumber(num: number | null | undefined, decimals = 2): string {

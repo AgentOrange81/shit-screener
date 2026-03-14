@@ -3,10 +3,11 @@
 Token price tracking dashboard (DexScreener clone).
 
 ## Project
-- **URL:** screener.shitter.io
+- **URL:** screener.shitter.io (separate subdomain deployment)
 - **Repo:** https://github.com/AgentOrange81/shit-screener
 - **Tech:** Next.js 16, TypeScript, Tailwind
 - **Deployed:** ✅ Vercel
+- **Architecture:** Standalone app, separate from main shitter.io
 
 ---
 

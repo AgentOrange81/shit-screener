@@ -13,13 +13,32 @@ interface Token {
   priceChange1h: number;
   priceChange5m: number;
   volume24h: number;
+  volume6h: number;
+  volume1h: number;
+  volume5m: number;
   liquidity: number | null;
   marketCap: number | null;
   fdv: number | null;
   buys24h: number;
   sells24h: number;
+  buys6h: number;
+  sells6h: number;
+  buys1h: number;
+  sells1h: number;
+  buys5m: number;
+  sells5m: number;
   pairAddress: string | null;
   dexId: string | null;
+  pairCreatedAt: number | null;
+}
+
+interface Candle {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
 function formatNumber(num: number | null | undefined, decimals = 2): string {
@@ -40,34 +59,24 @@ function formatPrice(price: string | null): string {
   return `$${num.toFixed(2)}`;
 }
 
-// Generate mock candlestick data for demo
-function generateMockCandles(basePrice: number): CandlestickData[] {
-  const candles: CandlestickData[] = [];
-  let price = basePrice * 0.8;
-  const now = Math.floor(Date.now() / 1000);
-  const dayAgo = now - 24 * 60 * 60;
-  const interval = 15 * 60; // 15 min candles
+function calculatePairAge(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   
-  for (let t = dayAgo; t <= now; t += interval) {
-    const volatility = price * 0.02;
-    const open = price;
-    const close = open + (Math.random() - 0.48) * volatility;
-    const high = Math.max(open, close) + Math.random() * volatility * 0.5;
-    const low = Math.min(open, close) - Math.random() * volatility * 0.5;
-    
-    candles.push({
-      time: t as Time,
-      open,
-      high,
-      low,
-      close,
-    });
-    
-    price = close;
+  if (days > 0) {
+    return `${days}d ${hours}h ago`;
   }
-  
-  return candles;
+  return `${hours}h ago`;
 }
+
+const timeframes = [
+  { label: '15m', value: '15' },
+  { label: '1h', value: '60' },
+  { label: '4h', value: '240' },
+  { label: '1D', value: '1440' },
+];
 
 export default function TokenPage({ params }: { params: { address: string } }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -75,8 +84,10 @@ export default function TokenPage({ params }: { params: { address: string } }) {
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   
   const [token, setToken] = useState<Token | null>(null);
+  const [candles, setCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState('15');
 
   useEffect(() => {
     fetch(`/api/tokens`)
@@ -92,7 +103,20 @@ export default function TokenPage({ params }: { params: { address: string } }) {
   }, [params.address]);
 
   useEffect(() => {
-    if (!chartContainerRef.current || !token?.priceUsd) return;
+    if (!token?.address) return;
+    
+    fetch(`/api/candles?address=${token.address}&timeframe=${timeframe}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.candles) {
+          setCandles(data.candles);
+        }
+      })
+      .catch(err => console.error('Error fetching candles:', err));
+  }, [token?.address, timeframe]);
+
+  useEffect(() => {
+    if (!chartContainerRef.current || candles.length === 0) return;
 
     // Clean up previous chart
     if (chartRef.current) {
@@ -126,10 +150,16 @@ export default function TokenPage({ params }: { params: { address: string } }) {
       wickDownColor: '#ff4444',
     });
 
-    const basePrice = parseFloat(token.priceUsd) || 0.01;
-    const candles = generateMockCandles(basePrice);
-    candlestickSeries.setData(candles);
+    // Transform candles to lightweight-charts format
+    const chartCandles: CandlestickData[] = candles.map(c => ({
+      time: c.timestamp as Time,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
 
+    candlestickSeries.setData(chartCandles);
     chart.timeScale().fitContent();
 
     chartRef.current = chart;
@@ -147,7 +177,7 @@ export default function TokenPage({ params }: { params: { address: string } }) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [token?.priceUsd]);
+  }, [candles]);
 
   if (loading) {
     return (
@@ -194,6 +224,23 @@ export default function TokenPage({ params }: { params: { address: string } }) {
           </div>
         </div>
 
+        {/* Timeframe selector */}
+        <div className="mb-4 flex space-x-2">
+          {timeframes.map((tf) => (
+            <button
+              key={tf.value}
+              onClick={() => setTimeframe(tf.value)}
+              className={`px-3 py-1 rounded text-sm ${
+                timeframe === tf.value
+                  ? 'bg-gold text-shit-darker font-bold'
+                  : 'bg-shit-dark text-cream hover:bg-shit-light'
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-6">
           <h2 className="text-xl font-bold text-cream mb-4">Price Chart</h2>
           <div ref={chartContainerRef} className="w-full bg-shit-darker rounded" />
@@ -221,17 +268,34 @@ export default function TokenPage({ params }: { params: { address: string } }) {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">24h Buys</div>
-            <div className="text-green-400 font-bold">{token.buys24h.toLocaleString()}</div>
+            <div className="text-shit-light text-sm">5m Buys</div>
+            <div className="text-green-400 font-bold">{token.buys5m?.toLocaleString() || 0}</div>
           </div>
-          
           <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">24h Sells</div>
-            <div className="text-red-400 font-bold">{token.sells24h.toLocaleString()}</div>
+            <div className="text-shit-light text-sm">5m Sells</div>
+            <div className="text-red-400 font-bold">{token.sells5m?.toLocaleString() || 0}</div>
+          </div>
+          <div className="bg-shit-dark p-4 rounded">
+            <div className="text-shit-light text-sm">1h Buys</div>
+            <div className="text-green-400 font-bold">{token.buys1h?.toLocaleString() || 0}</div>
+          </div>
+          <div className="bg-shit-dark p-4 rounded">
+            <div className="text-shit-light text-sm">1h Sells</div>
+            <div className="text-red-400 font-bold">{token.sells1h?.toLocaleString() || 0}</div>
           </div>
         </div>
+
+        {/* Pair age */}
+        {token.pairCreatedAt && (
+          <div className="mt-4">
+            <div className="text-shit-light text-sm">Pair Age</div>
+            <div className="text-cream">
+              {calculatePairAge(token.pairCreatedAt)}
+            </div>
+          </div>
+        )}
 
         {token.pairAddress && (
           <div className="mt-6">
