@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, use } from 'react';
 import { createChart, CandlestickSeries, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts';
 
 interface Token {
@@ -78,7 +78,9 @@ const timeframes = [
   { label: '1D', value: '1440' },
 ];
 
-export default function TokenPage({ params }: { params: { address: string } }) {
+export default function TokenPage({ params }: { params: Promise<{ address: string }> }) {
+  const { address } = use(params);
+  
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -94,13 +96,13 @@ export default function TokenPage({ params }: { params: { address: string } }) {
       .then(res => res.json())
       .then(data => {
         if (data.error) throw new Error(data.error);
-        const found = data.find((t: Token) => t.address === params.address);
+        const found = data.find((t: Token) => t.address === address);
         if (!found) throw new Error('Token not found');
         setToken(found);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [params.address]);
+  }, [address]);
 
   useEffect(() => {
     if (!token?.address) return;
@@ -150,14 +152,16 @@ export default function TokenPage({ params }: { params: { address: string } }) {
       wickDownColor: '#ff4444',
     });
 
-    // Transform candles to lightweight-charts format
-    const chartCandles: CandlestickData[] = candles.map(c => ({
-      time: c.timestamp as Time,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }));
+    // Transform candles to lightweight-charts format (must be sorted by time ascending)
+    const chartCandles: CandlestickData[] = candles
+      .map(c => ({
+        time: c.timestamp as Time,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }))
+      .sort((a, b) => (a.time as number) - (b.time as number));
 
     candlestickSeries.setData(chartCandles);
     chart.timeScale().fitContent();

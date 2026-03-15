@@ -85,7 +85,7 @@ export async function GET() {
   try {
     // Fetch top pools from GeckoTerminal directly
     const poolsRes = await fetch(
-      'https://api.geckoterminal.com/api/v2/networks/solana/pools?page=1&sort=volume_desc',
+      'https://api.geckoterminal.com/api/v2/networks/solana/pools?page=1&sort=h24_volume_usd_desc',
       { next: { revalidate: 10 } }
     );
     
