@@ -96,11 +96,6 @@ export default function Home() {
             <span className="text-2xl md:text-3xl group-hover:animate-bounce inline-block">💩</span> 
             <span style={{ color: '#f4d03f' }}>SCREENER</span>
           </Link>
-          <div className="flex gap-4 md:gap-8 items-center">
-            <Link href="/" className="hover:text-[#f4d03f] transition-colors font-medium">
-              Tokens
-            </Link>
-          </div>
         </div>
       </nav>
 
