@@ -49,6 +49,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('volume24h');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -80,7 +81,13 @@ export default function Home() {
     }
   };
 
-  const sortedTokens = [...tokens].sort((a, b) => {
+  const filteredTokens = tokens.filter(t => 
+    t.name.toLowerCase().includes(search.toLowerCase()) ||
+    t.symbol.toLowerCase().includes(search.toLowerCase()) ||
+    t.address.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const sortedTokens = [...filteredTokens].sort((a, b) => {
     let aVal: any = a[sortKey];
     let bVal: any = b[sortKey];
     
@@ -142,10 +149,10 @@ export default function Home() {
       <section className="bg-gradient-shit text-cream py-12 md:py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-black mb-4">
-            Live <span className="text-gold">Tokens</span>
+            Hot <span className="text-gold">Tokens</span>
           </h1>
           <p className="text-lg md:text-xl text-shit-light">
-            Real-time Solana memecoin data
+            Trending Solana memecoins right now
           </p>
         </div>
       </section>
@@ -153,6 +160,17 @@ export default function Home() {
       {/* Token Table */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
+          {/* Search Bar */}
+          <div className="mb-6 flex justify-center">
+            <input
+              type="text"
+              placeholder="Search by name, symbol, or address..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full max-w-md px-4 py-3 bg-shit-brown/5 border border-shit-brown/30 rounded-xl text-cream placeholder:text-shit-medium focus:outline-none focus:border-glass focus:ring-1 focus:ring-glass transition-all"
+            />
+          </div>
+
           {sortedTokens.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🐸</div>

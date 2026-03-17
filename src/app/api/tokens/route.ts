@@ -46,14 +46,22 @@ export async function GET() {
     const dexData = await dexRes.json();
     const pairs: any[] = dexData.pairs || [];
     
-    // Filter to Solana network only and sort by volume
-    const solanaPairs = pairs
-      .filter((p: any) => p.chainId === 'solana')
+    // Filter to Solana memecoins (exclude SOL, USDC, USDT pairs)
+    const excludedBases = ['solana', 'wrapped solana', 'usdc', 'usdt', 'sol'];
+    const memecoinPairs = pairs
+      .filter((p: any) => {
+        if (p.chainId !== 'solana') return false;
+        const baseName = p.baseToken?.name?.toLowerCase() || '';
+        const baseSymbol = p.baseToken?.symbol?.toLowerCase() || '';
+        // Exclude SOL, USDC, USDT, and other major tokens
+        if (excludedBases.some(ex => baseName.includes(ex) || baseSymbol.includes(ex))) return false;
+        return true;
+      })
       .sort((a: any, b: any) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
-      .slice(0, 50); // Top 50
+      .slice(0, 50); // Top 50 memecoins
     
     // Transform to our format
-    const enrichedTokens: EnrichedToken[] = solanaPairs.map((pair: any) => ({
+    const enrichedTokens: EnrichedToken[] = memecoinPairs.map((pair: any) => ({
       symbol: pair.baseToken?.symbol || '???',
       name: pair.baseToken?.name || 'Unknown',
       address: pair.baseToken?.address || 'unknown',
@@ -67,7 +75,7 @@ export async function GET() {
       volume1h: pair.volume?.h1 || 0,
       volume5m: pair.volume?.m5 || 0,
       liquidity: pair.liquidity?.usd || null,
-      marketCap: null, // DexScreener doesn't provide market cap directly
+      marketCap: null,
       fdv: pair.fdv || null,
       buys24h: pair.txns?.h24?.buys || 0,
       sells24h: pair.txns?.h24?.sells || 0,
