@@ -70,7 +70,7 @@ export async function GET() {
         volume1h: pair.volume?.h1 || 0,
         volume5m: pair.volume?.m5 || 0,
         liquidity: pair.liquidity?.usd || null,
-        marketCap: null,
+        marketCap: pair.marketCap || null,
         fdv: pair.fdv || null,
         buys24h: pair.txns?.h24?.buys || 0,
         sells24h: pair.txns?.h24?.sells || 0,
