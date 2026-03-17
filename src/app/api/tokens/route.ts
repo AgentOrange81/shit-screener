@@ -1,55 +1,5 @@
 import { NextResponse } from 'next/server';
 
-interface GeckoTerminalPool {
-  id: string;
-  type: string;
-  attributes: {
-    base_token_price_usd: string;
-    address: string;
-    name: string;
-    pool_created_at: string;
-    fdv_usd: string;
-    market_cap_usd: string | null;
-    price_change_percentage: {
-      m5: string;
-      m15: string;
-      m30: string;
-      h1: string;
-      h6: string;
-      h24: string;
-    };
-    transactions: {
-      m5: { buys: number; sells: number; buyers: number; sellers: number };
-      h1: { buys: number; sells: number; buyers: number; sellers: number };
-      h6: { buys: number; sells: number; buyers: number; sellers: number };
-      h24: { buys: number; sells: number; buyers: number; sellers: number };
-    };
-    volume_usd: {
-      m5: string;
-      m15: string;
-      m30: string;
-      h1: string;
-      h6: string;
-      h24: string;
-    };
-    reserve_in_usd: string;
-  };
-  relationships: {
-    base_token: {
-      data: {
-        id: string;
-        symbol: string;
-        name: string;
-      };
-    };
-    dex: {
-      data: {
-        id: string;
-      };
-    };
-  };
-}
-
 interface EnrichedToken {
   symbol: string;
   name: string;
@@ -83,60 +33,54 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Fetch top pools from GeckoTerminal directly
-    const poolsRes = await fetch(
-      'https://api.geckoterminal.com/api/v2/networks/solana/pools?page=1&sort=h24_volume_usd_desc',
+    // Fetch from DexScreener API
+    const dexRes = await fetch(
+      'https://api.dexscreener.com/latest/dex/search?q=solana',
       { next: { revalidate: 10 } }
     );
     
-    if (!poolsRes.ok) {
-      throw new Error(`GeckoTerminal API error: ${poolsRes.status}`);
+    if (!dexRes.ok) {
+      throw new Error(`DexScreener API error: ${dexRes.status}`);
     }
     
-    const poolsData = await poolsRes.json();
-    const pools: GeckoTerminalPool[] = poolsData.data;
+    const dexData = await dexRes.json();
+    const pairs: any[] = dexData.pairs || [];
     
-    // Transform to our format with null safety
-    const enrichedTokens: EnrichedToken[] = pools.map((pool) => {
-      const attrs = pool.attributes;
-      const baseToken = pool.relationships?.base_token?.data;
-      const dex = pool.relationships?.dex?.data;
-      
-      // Safe parsing with defaults
-      const priceUsd = attrs?.base_token_price_usd ?? null;
-      const name = baseToken?.name ?? attrs?.name ?? 'Unknown';
-      const symbol = baseToken?.symbol ?? name.split('/')[0].trim() ?? '???';
-      const address = baseToken?.id?.replace('solana_', '') ?? 'unknown';
-      
-      return {
-        symbol,
-        name,
-        address,
-        priceUsd,
-        priceNative: null,
-        priceChange24h: parseFloat(attrs?.price_change_percentage?.h24 ?? '0'),
-        priceChange1h: parseFloat(attrs?.price_change_percentage?.h1 ?? '0'),
-        priceChange5m: parseFloat(attrs?.price_change_percentage?.m5 ?? '0'),
-        volume24h: parseFloat(attrs?.volume_usd?.h24 ?? '0'),
-        volume6h: parseFloat(attrs?.volume_usd?.h6 ?? '0'),
-        volume1h: parseFloat(attrs?.volume_usd?.h1 ?? '0'),
-        volume5m: parseFloat(attrs?.volume_usd?.m5 ?? '0'),
-        liquidity: attrs?.reserve_in_usd ? parseFloat(attrs.reserve_in_usd) : null,
-        marketCap: attrs?.market_cap_usd ? parseFloat(attrs.market_cap_usd) : null,
-        fdv: parseFloat(attrs?.fdv_usd ?? '0'),
-        buys24h: attrs?.transactions?.h24?.buys ?? 0,
-        sells24h: attrs?.transactions?.h24?.sells ?? 0,
-        buys6h: attrs?.transactions?.h6?.buys ?? 0,
-        sells6h: attrs?.transactions?.h6?.sells ?? 0,
-        buys1h: attrs?.transactions?.h1?.buys ?? 0,
-        sells1h: attrs?.transactions?.h1?.sells ?? 0,
-        buys5m: attrs?.transactions?.m5?.buys ?? 0,
-        sells5m: attrs?.transactions?.m5?.sells ?? 0,
-        pairAddress: attrs?.address ?? null,
-        dexId: dex?.id ?? null,
-        pairCreatedAt: attrs?.pool_created_at ? new Date(attrs.pool_created_at).getTime() : null,
-      };
-    });
+    // Filter to Solana network only and sort by volume
+    const solanaPairs = pairs
+      .filter((p: any) => p.chainId === 'solana')
+      .sort((a: any, b: any) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+      .slice(0, 50); // Top 50
+    
+    // Transform to our format
+    const enrichedTokens: EnrichedToken[] = solanaPairs.map((pair: any) => ({
+      symbol: pair.baseToken?.symbol || '???',
+      name: pair.baseToken?.name || 'Unknown',
+      address: pair.baseToken?.address || 'unknown',
+      priceUsd: pair.priceUsd || null,
+      priceNative: pair.priceNative || null,
+      priceChange24h: pair.priceChange?.h24 || 0,
+      priceChange1h: pair.priceChange?.h1 || 0,
+      priceChange5m: pair.priceChange?.m5 || 0,
+      volume24h: pair.volume?.h24 || 0,
+      volume6h: pair.volume?.h6 || 0,
+      volume1h: pair.volume?.h1 || 0,
+      volume5m: pair.volume?.m5 || 0,
+      liquidity: pair.liquidity?.usd || null,
+      marketCap: null, // DexScreener doesn't provide market cap directly
+      fdv: pair.fdv || null,
+      buys24h: pair.txns?.h24?.buys || 0,
+      sells24h: pair.txns?.h24?.sells || 0,
+      buys6h: pair.txns?.h6?.buys || 0,
+      sells6h: pair.txns?.h6?.sells || 0,
+      buys1h: pair.txns?.h1?.buys || 0,
+      sells1h: pair.txns?.h1?.sells || 0,
+      buys5m: pair.txns?.m5?.buys || 0,
+      sells5m: pair.txns?.m5?.sells || 0,
+      pairAddress: pair.pairAddress || null,
+      dexId: pair.dexId || null,
+      pairCreatedAt: pair.pairCreatedAt || null,
+    }));
     
     return NextResponse.json(enrichedTokens);
   } catch (error) {
