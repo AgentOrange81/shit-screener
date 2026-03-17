@@ -14,13 +14,8 @@ interface Token {
   marketCap: number | null;
 }
 
-function formatNumber(num: number | null | undefined, decimals = 2): string {
-  if (num === null || num === undefined) return '-';
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(decimals)}B`;
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(decimals)}M`;
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(decimals)}K`;
-  return `$${num.toFixed(decimals)}`;
-}
+type SortKey = 'name' | 'symbol' | 'priceUsd' | 'priceChange24h' | 'volume24h' | 'liquidity' | 'marketCap';
+type SortDir = 'asc' | 'desc';
 
 function formatPrice(price: string | null): string {
   if (!price) return '-';
@@ -32,10 +27,28 @@ function formatPrice(price: string | null): string {
   return `$${num.toFixed(2)}`;
 }
 
+function formatNumber(num: number | null | undefined, decimals = 2): string {
+  if (num === null || num === undefined) return '-';
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(decimals)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(decimals)}M`;
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(decimals)}K`;
+  return `$${num.toFixed(decimals)}`;
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  return (
+    <span className="ml-1 text-xs">
+      {active ? (dir === 'asc' ? '▲' : '▼') : '○'}
+    </span>
+  );
+}
+
 export default function Home() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('volume24h');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,6 +70,32 @@ export default function Home() {
     
     return () => controller.abort();
   }, []);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const sortedTokens = [...tokens].sort((a, b) => {
+    let aVal: any = a[sortKey];
+    let bVal: any = b[sortKey];
+    
+    if (sortKey === 'name' || sortKey === 'symbol') {
+      aVal = (aVal || '').toLowerCase();
+      bVal = (bVal || '').toLowerCase();
+      return sortDir === 'asc' 
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    }
+    
+    aVal = aVal || 0;
+    bVal = bVal || 0;
+    return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+  });
 
   if (loading) {
     return (
@@ -114,7 +153,7 @@ export default function Home() {
       {/* Token Table */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {tokens.length === 0 ? (
+          {sortedTokens.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🐸</div>
               <h2 className="text-2xl font-bold mb-2 text-cream">No Tokens Yet</h2>
@@ -127,15 +166,40 @@ export default function Home() {
                   <tr className="border-b border-shit-brown/30 text-left text-shit-medium text-sm">
                     <th className="py-3 px-2">Name</th>
                     <th className="py-3 px-2">Symbol</th>
-                    <th className="py-3 px-2">Price</th>
-                    <th className="py-3 px-2">24h %</th>
-                    <th className="py-3 px-2">Volume</th>
-                    <th className="py-3 px-2">Liquidity</th>
-                    <th className="py-3 px-2">Market Cap</th>
+                    <th 
+                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      onClick={() => handleSort('priceUsd')}
+                    >
+                      Price <SortIcon active={sortKey === 'priceUsd'} dir={sortDir} />
+                    </th>
+                    <th 
+                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      onClick={() => handleSort('priceChange24h')}
+                    >
+                      24h % <SortIcon active={sortKey === 'priceChange24h'} dir={sortDir} />
+                    </th>
+                    <th 
+                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      onClick={() => handleSort('volume24h')}
+                    >
+                      Volume <SortIcon active={sortKey === 'volume24h'} dir={sortDir} />
+                    </th>
+                    <th 
+                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      onClick={() => handleSort('liquidity')}
+                    >
+                      Liquidity <SortIcon active={sortKey === 'liquidity'} dir={sortDir} />
+                    </th>
+                    <th 
+                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      onClick={() => handleSort('marketCap')}
+                    >
+                      Market Cap <SortIcon active={sortKey === 'marketCap'} dir={sortDir} />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tokens.map((token) => (
+                  {sortedTokens.map((token) => (
                     <tr
                       key={token.address}
                       className="border-b border-shit-brown/20 hover:bg-shit-brown/5 transition-colors cursor-pointer"
