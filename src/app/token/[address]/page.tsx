@@ -185,46 +185,59 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gold text-xl">Loading...</div>
+      <div className="min-h-screen bg-shit-darker flex items-center justify-center">
+        <div className="text-center animate-fade-in-up">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-glass mx-auto mb-4"></div>
+          <p className="text-cream">Loading token...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !token) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Error: {error || 'Token not found'}</div>
+      <div className="min-h-screen bg-shit-darker flex items-center justify-center">
+        <div className="text-center animate-fade-in-up">
+          <div className="text-6xl mb-4">💥</div>
+          <h2 className="text-xl font-bold mb-2 text-cream">Token Not Found</h2>
+          <p className="text-shit-medium mb-6">{error || 'Token not found'}</p>
+          <a
+            href="/tokens"
+            className="px-6 py-3 bg-glass hover:bg-gold text-shit-darker font-bold rounded-xl transition-all shadow-glow inline-block"
+          >
+            ← Back to Tokens
+          </a>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen bg-shit-darker p-6">
       <div className="max-w-4xl mx-auto">
-        <a href="/tokens" className="text-gold hover:text-gold-light mb-4 inline-block">
+        <a href="/tokens" className="text-glass hover:text-gold mb-4 inline-block transition-colors">
           ← Back to Tokens
         </a>
         
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-cream">{token.name}</h1>
-          <p className="text-gold text-xl">{token.symbol}</p>
-          <p className="text-shit-light text-sm">{token.address}</p>
+          <p className="text-glass text-xl font-medium">{token.symbol}</p>
+          <p className="text-shit-medium text-sm font-mono">{token.address}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">Price</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">Price</div>
             <div className="text-3xl text-cream">{formatPrice(token.priceUsd)}</div>
-            <div className="text-shit-light text-sm">SOL: {token.priceNative || '-'}</div>
+            <div className="text-shit-medium text-sm">SOL: {token.priceNative || '-'}</div>
           </div>
           
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">24h Change</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">24h Change</div>
             <div className={`text-3xl ${token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {token.priceChange24h >= 0 ? '+' : ''}{token.priceChange24h.toFixed(1)}%
             </div>
-            <div className="text-shit-light text-sm">1h: {token.priceChange1h >= 0 ? '+' : ''}{token.priceChange1h?.toFixed(1) || 0}%</div>
+            <div className="text-shit-medium text-sm">1h: {token.priceChange1h >= 0 ? '+' : ''}{token.priceChange1h?.toFixed(1) || 0}%</div>
           </div>
         </div>
 
@@ -234,10 +247,10 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
             <button
               key={tf.value}
               onClick={() => setTimeframe(tf.value)}
-              className={`px-3 py-1 rounded text-sm ${
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
                 timeframe === tf.value
-                  ? 'bg-gold text-shit-darker font-bold'
-                  : 'bg-shit-dark text-cream hover:bg-shit-light'
+                  ? 'bg-glass text-shit-darker font-bold shadow-glow'
+                  : 'bg-shit-brown/20 text-cream hover:bg-shit-brown/40 border border-shit-brown/30'
               }`}
             >
               {tf.label}
@@ -247,55 +260,55 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
 
         <div className="mb-6">
           <h2 className="text-xl font-bold text-cream mb-4">Price Chart</h2>
-          <div ref={chartContainerRef} className="w-full bg-shit-darker rounded" />
+          <div ref={chartContainerRef} className="w-full bg-shit-brown/10 border border-shit-brown/30 rounded-xl shadow-lifted" />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">24h Volume</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">24h Volume</div>
             <div className="text-cream font-bold">{formatNumber(token.volume24h)}</div>
           </div>
           
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">Liquidity</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">Liquidity</div>
             <div className="text-cream font-bold">{formatNumber(token.liquidity)}</div>
           </div>
           
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">Market Cap</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">Market Cap</div>
             <div className="text-cream font-bold">{formatNumber(token.marketCap)}</div>
           </div>
           
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">FDV</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">FDV</div>
             <div className="text-cream font-bold">{formatNumber(token.fdv)}</div>
           </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">5m Buys</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">5m Buys</div>
             <div className="text-green-400 font-bold">{token.buys5m?.toLocaleString() || 0}</div>
           </div>
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">5m Sells</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">5m Sells</div>
             <div className="text-red-400 font-bold">{token.sells5m?.toLocaleString() || 0}</div>
           </div>
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">1h Buys</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">1h Buys</div>
             <div className="text-green-400 font-bold">{token.buys1h?.toLocaleString() || 0}</div>
           </div>
-          <div className="bg-shit-dark p-4 rounded">
-            <div className="text-shit-light text-sm">1h Sells</div>
+          <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">1h Sells</div>
             <div className="text-red-400 font-bold">{token.sells1h?.toLocaleString() || 0}</div>
           </div>
         </div>
 
         {/* Pair age */}
         {token.pairCreatedAt && (
-          <div className="mt-4">
-            <div className="text-shit-light text-sm">Pair Age</div>
-            <div className="text-cream">
+          <div className="mt-6 bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm">Pair Age</div>
+            <div className="text-cream font-bold">
               {calculatePairAge(token.pairCreatedAt)}
             </div>
           </div>

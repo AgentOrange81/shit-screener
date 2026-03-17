@@ -109,24 +109,39 @@ export default function TokensPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gold text-xl">Loading tokens...</div>
+      <div className="min-h-screen bg-shit-darker flex items-center justify-center">
+        <div className="text-center animate-fade-in-up">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-glass mx-auto mb-4"></div>
+          <p className="text-cream">Loading tokens...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Error: {error}</div>
+      <div className="min-h-screen bg-shit-darker flex items-center justify-center">
+        <div className="text-center animate-fade-in-up">
+          <div className="text-6xl mb-4">💥</div>
+          <h2 className="text-xl font-bold mb-2 text-cream">Failed to Load</h2>
+          <p className="text-shit-medium mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-glass hover:bg-gold text-shit-darker font-bold rounded-xl transition-all shadow-glow"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen bg-shit-darker p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-cream mb-6">Token Screener</h1>
+        <h1 className="text-3xl font-bold text-cream mb-6">
+          <span className="text-glass">💩</span> Token Screener
+        </h1>
         
         <div className="mb-4">
           <input
@@ -134,36 +149,36 @@ export default function TokensPage() {
             placeholder="Search tokens..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full max-w-md px-4 py-2 bg-shit-dark border border-shit-light rounded text-cream placeholder-shit-light"
+            className="w-full max-w-md px-4 py-2 bg-shit-brown/5 border border-shit-brown/30 rounded-lg text-cream placeholder-shit-medium focus:outline-none focus:border-glass focus:ring-1 focus:ring-glass transition-all"
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-shit-brown/10 border border-shit-brown/30 rounded-xl shadow-lifted">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-shit text-left text-shit-light text-sm">
+              <tr className="border-b border-shit-brown/30 text-left text-shit-medium text-sm">
                 <th className="py-3 px-2">Name</th>
                 <th className="py-3 px-2">Symbol</th>
                 <th 
-                  className="py-3 px-2 cursor-pointer hover:text-gold"
+                  className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
                   onClick={() => handleSort('priceUsd')}
                 >
                   Price <SortIcon active={sortKey === 'priceUsd'} dir={sortDir} />
                 </th>
                 <th 
-                  className="py-3 px-2 cursor-pointer hover:text-gold"
+                  className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
                   onClick={() => handleSort('priceChange24h')}
                 >
                   24h % <SortIcon active={sortKey === 'priceChange24h'} dir={sortDir} />
                 </th>
                 <th 
-                  className="py-3 px-2 cursor-pointer hover:text-gold"
+                  className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
                   onClick={() => handleSort('volume24h')}
                 >
                   Volume <SortIcon active={sortKey === 'volume24h'} dir={sortDir} />
                 </th>
                 <th 
-                  className="py-3 px-2 cursor-pointer hover:text-gold"
+                  className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
                   onClick={() => handleSort('liquidity')}
                 >
                   Liquidity <SortIcon active={sortKey === 'liquidity'} dir={sortDir} />
@@ -176,11 +191,11 @@ export default function TokensPage() {
               {sortedTokens.map(token => (
                 <tr 
                   key={token.address}
-                  className="border-b border-shit hover:bg-shit-dark/50 cursor-pointer"
+                  className="border-b border-shit-brown/20 hover:bg-shit-brown/20 cursor-pointer transition-colors"
                   onClick={() => window.location.href = `/token/${token.address}`}
                 >
                   <td className="py-3 px-2 text-cream">{token.name}</td>
-                  <td className="py-3 px-2 text-gold">{token.symbol}</td>
+                  <td className="py-3 px-2 text-glass font-medium">{token.symbol}</td>
                   <td className="py-3 px-2 text-cream">{formatPrice(token.priceUsd)}</td>
                   <td className={`py-3 px-2 ${token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.priceChange24h >= 0 ? '+' : ''}{token.priceChange24h.toFixed(1)}%
@@ -196,7 +211,7 @@ export default function TokensPage() {
         </div>
 
         {sortedTokens.length === 0 && (
-          <div className="text-center py-8 text-shit-light">No tokens found</div>
+          <div className="text-center py-8 text-shit-medium">No tokens found</div>
         )}
       </div>
     </div>
