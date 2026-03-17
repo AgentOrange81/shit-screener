@@ -161,6 +161,30 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-shit-darker text-shit-light py-10 md:py-12 px-4 md:px-6 border-t border-shit-dark/50">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="text-gold font-bold text-xl flex items-center gap-2">
+            <span className="text-3xl">💩</span> 
+            <span className="hidden sm:inline">SHITTER</span>
+          </div>
+          <div className="flex gap-6 md:gap-8">
+            <a href="#" className="hover:text-gold transition-colors text-sm md:text-base">
+              Twitter
+            </a>
+            <a href="#" className="hover:text-gold transition-colors text-sm md:text-base">
+              Telegram
+            </a>
+            <a href="#" className="hover:text-gold transition-colors text-sm md:text-base">
+              Discord
+            </a>
+          </div>
+          <div className="text-sm text-shit-medium">
+            😂 2026 Shitter. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
