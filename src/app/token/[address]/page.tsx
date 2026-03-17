@@ -92,29 +92,50 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
   const [timeframe, setTimeframe] = useState('15');
 
   useEffect(() => {
-    fetch(`/api/tokens`)
-      .then(res => res.json())
+    const controller = new AbortController();
+    
+    fetch(`/api/tokens`, { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        if (data.error) throw new Error(data.error);
+        if (!Array.isArray(data)) throw new Error('Invalid response');
         const found = data.find((t: Token) => t.address === address);
         if (!found) throw new Error('Token not found');
         setToken(found);
       })
-      .catch(err => setError(err.message))
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error('Token fetch error:', err);
+        setError(err.message || 'Failed to load token');
+      })
       .finally(() => setLoading(false));
+    
+    return () => controller.abort();
   }, [address]);
 
   useEffect(() => {
     if (!token?.address) return;
     
-    fetch(`/api/candles?address=${token.address}&timeframe=${timeframe}`)
-      .then(res => res.json())
+    const controller = new AbortController();
+    
+    fetch(`/api/candles?address=${token.address}&timeframe=${timeframe}`, { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        if (data.candles) {
+        if (Array.isArray(data.candles)) {
           setCandles(data.candles);
         }
       })
-      .catch(err => console.error('Error fetching candles:', err));
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error('Candles fetch error:', err);
+      });
+    
+    return () => controller.abort();
   }, [token?.address, timeframe]);
 
   useEffect(() => {
@@ -127,12 +148,12 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#1a1a1a' },
-        textColor: '#f5f5dc',
+        background: { color: '#3d2f21' }, // shit-darker
+        textColor: '#f5f0e6', // cream
       },
       grid: {
-        vertLines: { color: '#2d2d2d' },
-        horzLines: { color: '#2d2d2d' },
+        vertLines: { color: '#5c4a32' }, // shit-dark
+        horzLines: { color: '#5c4a32' },
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
@@ -144,12 +165,12 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
 
     // @ts-ignore - lightweight-charts v5 typing issue
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#D4AF37',
-      downColor: '#ff4444',
-      borderUpColor: '#D4AF37',
-      borderDownColor: '#ff4444',
-      wickUpColor: '#D4AF37',
-      wickDownColor: '#ff4444',
+      upColor: '#d4af37', // gold
+      downColor: '#ef4444', // red-500
+      borderUpColor: '#d4af37',
+      borderDownColor: '#ef4444',
+      wickUpColor: '#d4af37',
+      wickDownColor: '#ef4444',
     });
 
     // Transform candles to lightweight-charts format (must be sorted by time ascending)

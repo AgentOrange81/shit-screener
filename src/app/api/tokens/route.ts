@@ -96,38 +96,45 @@ export async function GET() {
     const poolsData = await poolsRes.json();
     const pools: GeckoTerminalPool[] = poolsData.data;
     
-    // Transform to our format
+    // Transform to our format with null safety
     const enrichedTokens: EnrichedToken[] = pools.map((pool) => {
       const attrs = pool.attributes;
-      const baseToken = pool.relationships.base_token.data;
+      const baseToken = pool.relationships?.base_token?.data;
+      const dex = pool.relationships?.dex?.data;
+      
+      // Safe parsing with defaults
+      const priceUsd = attrs?.base_token_price_usd ?? null;
+      const name = baseToken?.name ?? attrs?.name ?? 'Unknown';
+      const symbol = baseToken?.symbol ?? name.split('/')[0].trim() ?? '???';
+      const address = baseToken?.id?.replace('solana_', '') ?? 'unknown';
       
       return {
-        symbol: baseToken.symbol || attrs.name.split('/')[0].trim(),
-        name: baseToken.name || attrs.name,
-        address: baseToken.id.replace('solana_', ''),
-        priceUsd: attrs.base_token_price_usd,
+        symbol,
+        name,
+        address,
+        priceUsd,
         priceNative: null,
-        priceChange24h: parseFloat(attrs.price_change_percentage.h24) || 0,
-        priceChange1h: parseFloat(attrs.price_change_percentage.h1) || 0,
-        priceChange5m: parseFloat(attrs.price_change_percentage.m5) || 0,
-        volume24h: parseFloat(attrs.volume_usd.h24) || 0,
-        volume6h: parseFloat(attrs.volume_usd.h6) || 0,
-        volume1h: parseFloat(attrs.volume_usd.h1) || 0,
-        volume5m: parseFloat(attrs.volume_usd.m5) || 0,
-        liquidity: parseFloat(attrs.reserve_in_usd) || null,
-        marketCap: attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : null,
-        fdv: parseFloat(attrs.fdv_usd) || null,
-        buys24h: attrs.transactions.h24.buys,
-        sells24h: attrs.transactions.h24.sells,
-        buys6h: attrs.transactions.h6.buys,
-        sells6h: attrs.transactions.h6.sells,
-        buys1h: attrs.transactions.h1.buys,
-        sells1h: attrs.transactions.h1.sells,
-        buys5m: attrs.transactions.m5.buys,
-        sells5m: attrs.transactions.m5.sells,
-        pairAddress: attrs.address,
-        dexId: pool.relationships.dex.data.id,
-        pairCreatedAt: new Date(attrs.pool_created_at).getTime(),
+        priceChange24h: parseFloat(attrs?.price_change_percentage?.h24 ?? '0'),
+        priceChange1h: parseFloat(attrs?.price_change_percentage?.h1 ?? '0'),
+        priceChange5m: parseFloat(attrs?.price_change_percentage?.m5 ?? '0'),
+        volume24h: parseFloat(attrs?.volume_usd?.h24 ?? '0'),
+        volume6h: parseFloat(attrs?.volume_usd?.h6 ?? '0'),
+        volume1h: parseFloat(attrs?.volume_usd?.h1 ?? '0'),
+        volume5m: parseFloat(attrs?.volume_usd?.m5 ?? '0'),
+        liquidity: attrs?.reserve_in_usd ? parseFloat(attrs.reserve_in_usd) : null,
+        marketCap: attrs?.market_cap_usd ? parseFloat(attrs.market_cap_usd) : null,
+        fdv: parseFloat(attrs?.fdv_usd ?? '0'),
+        buys24h: attrs?.transactions?.h24?.buys ?? 0,
+        sells24h: attrs?.transactions?.h24?.sells ?? 0,
+        buys6h: attrs?.transactions?.h6?.buys ?? 0,
+        sells6h: attrs?.transactions?.h6?.sells ?? 0,
+        buys1h: attrs?.transactions?.h1?.buys ?? 0,
+        sells1h: attrs?.transactions?.h1?.sells ?? 0,
+        buys5m: attrs?.transactions?.m5?.buys ?? 0,
+        sells5m: attrs?.transactions?.m5?.sells ?? 0,
+        pairAddress: attrs?.address ?? null,
+        dexId: dex?.id ?? null,
+        pairCreatedAt: attrs?.pool_created_at ? new Date(attrs.pool_created_at).getTime() : null,
       };
     });
     

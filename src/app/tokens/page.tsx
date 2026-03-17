@@ -61,14 +61,29 @@ export default function TokensPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/api/tokens')
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) throw new Error(data.error);
-        setTokens(data);
+    const controller = new AbortController();
+    
+    fetch('/api/tokens', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
       })
-      .catch(err => setError(err.message))
+      .then(data => {
+        if (!Array.isArray(data)) throw new Error('Invalid response format');
+        if (data.length === 0) {
+          setTokens([]);
+        } else {
+          setTokens(data);
+        }
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error('Tokens fetch error:', err);
+        setError(err.message || 'Failed to load tokens');
+      })
       .finally(() => setLoading(false));
+    
+    return () => controller.abort();
   }, []);
 
   const handleSort = (key: SortKey) => {
