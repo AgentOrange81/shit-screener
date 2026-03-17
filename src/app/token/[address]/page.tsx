@@ -336,14 +336,20 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
         )}
 
         {token.pairAddress && (
-          <div className="mt-6">
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
             <a 
               href={`https://dexscreener.com/solana/${token.pairAddress}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gold hover:text-gold-light"
+              className="text-glass hover:text-gold underline text-sm transition-colors"
             >
-              View on DexScreener →
+              View on DexScreener ↗
+            </a>
+            <a
+              href="https://launch.shitter.io/create"
+              className="bg-glass hover:bg-gold text-shit-darker px-6 py-3 rounded-xl font-bold transition-all shadow-glow"
+            >
+              Launch Your Token 🚀
             </a>
           </div>
         )}

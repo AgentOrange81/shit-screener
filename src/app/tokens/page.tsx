@@ -226,7 +226,21 @@ export default function TokensPage() {
         </div>
 
         {sortedTokens.length === 0 && (
-          <div className="text-center py-8 text-shit-medium">No tokens found</div>
+          <div className="text-center py-12 animate-fade-in-up">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-bold text-cream mb-2">No Tokens Found</h3>
+            <p className="text-shit-medium mb-6">
+              {search ? `No results for "${search}"` : 'No tokens available right now'}
+            </p>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="px-6 py-3 bg-glass hover:bg-gold text-shit-darker font-bold rounded-xl transition-all shadow-glow"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
