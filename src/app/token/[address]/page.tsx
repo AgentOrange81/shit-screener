@@ -284,7 +284,7 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
           <div ref={chartContainerRef} className="w-full bg-shit-brown/10 border border-shit-brown/30 rounded-xl shadow-lifted" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up stagger-1">
           <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
             <div className="text-shit-medium text-sm">24h Volume</div>
             <div className="text-cream font-bold">{formatNumber(token.volume24h)}</div>
@@ -306,7 +306,7 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up stagger-2">
           <div className="bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
             <div className="text-shit-medium text-sm">5m Buys</div>
             <div className="text-green-400 font-bold">{token.buys5m?.toLocaleString() || 0}</div>
