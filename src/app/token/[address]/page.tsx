@@ -30,6 +30,12 @@ interface Token {
   pairAddress: string | null;
   dexId: string | null;
   pairCreatedAt: number | null;
+  info?: {
+    imageUrl?: string;
+    telegram?: string;
+    twitter?: string;
+    website?: string;
+  };
 }
 
 interface Candle {
@@ -340,6 +346,45 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
             <div className="text-shit-medium text-sm">Pair Age</div>
             <div className="text-cream font-bold">
               {calculatePairAge(token.pairCreatedAt)}
+            </div>
+          </div>
+        )}
+
+        {/* Social links */}
+        {token.info && (token.info.twitter || token.info.telegram || token.info.website) && (
+          <div className="mt-6 bg-shit-brown/10 border border-shit-brown/30 p-4 rounded-xl shadow-lifted">
+            <div className="text-shit-medium text-sm mb-3">Social Links</div>
+            <div className="flex flex-wrap gap-3">
+              {token.info.website && (
+                <a
+                  href={token.info.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-shit-brown/30 hover:bg-glass/50 text-cream hover:text-glass rounded-lg text-sm transition-all border border-shit-brown/30 flex items-center gap-2"
+                >
+                  🌐 Website
+                </a>
+              )}
+              {token.info.twitter && (
+                <a
+                  href={token.info.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-shit-brown/30 hover:bg-glass/50 text-cream hover:text-glass rounded-lg text-sm transition-all border border-shit-brown/30 flex items-center gap-2"
+                >
+                  🐦 Twitter
+                </a>
+              )}
+              {token.info.telegram && (
+                <a
+                  href={token.info.telegram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-shit-brown/30 hover:bg-glass/50 text-cream hover:text-glass rounded-lg text-sm transition-all border border-shit-brown/30 flex items-center gap-2"
+                >
+                  💬 Telegram
+                </a>
+              )}
             </div>
           </div>
         )}

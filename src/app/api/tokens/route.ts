@@ -71,6 +71,12 @@ interface EnrichedToken {
   pairAddress: string | null;
   dexId: string | null;
   pairCreatedAt: number | null;
+  info?: {
+    imageUrl?: string;
+    telegram?: string;
+    twitter?: string;
+    website?: string;
+  };
 }
 
 export const dynamic = 'force-dynamic';
@@ -132,6 +138,46 @@ export async function GET() {
 
     // Filter out pools with no price data
     const validTokens = enrichedTokens.filter(t => t.priceUsd && parseFloat(t.priceUsd) > 0);
+
+    // Enrich with social links from DexScreener (batch up to 30 addresses)
+    const addresses = validTokens.slice(0, 30).map(t => t.address);
+    if (addresses.length > 0) {
+      try {
+        const dexRes = await fetch(
+          `https://api.dexscreener.com/tokens/v1/solana/${addresses.join(',')}`,
+          { next: { revalidate: 60 } }
+        );
+        
+        if (dexRes.ok) {
+          const dexData = await dexRes.json();
+          const tokens: any[] = dexData.tokens || [];
+          
+          // Create lookup map
+          const socialMap = new Map<string, { imageUrl?: string; telegram?: string; twitter?: string; website?: string }>();
+          tokens.forEach((t: any) => {
+            if (t?.address) {
+              socialMap.set(t.address, {
+                imageUrl: t.info?.imageUrl,
+                telegram: t.info?.telegram,
+                twitter: t.info?.twitter,
+                website: t.info?.website,
+              });
+            }
+          });
+          
+          // Merge social data into tokens
+          validTokens.forEach((token, i) => {
+            const social = socialMap.get(token.address);
+            if (social) {
+              token.info = social;
+            }
+          });
+        }
+      } catch (err) {
+        console.error('DexScreener enrichment failed:', err);
+        // Continue without social data
+      }
+    }
 
     return NextResponse.json(validTokens);
   } catch (error) {
