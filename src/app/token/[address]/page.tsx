@@ -243,7 +243,16 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-cream">{token.name}</h1>
           <p className="text-glass text-xl font-medium">{token.symbol}</p>
-          <p className="text-shit-medium text-sm font-mono">{token.address}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-shit-medium text-sm font-mono">{token.address}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(token.address)}
+              className="px-2 py-1 bg-shit-brown/30 hover:bg-glass/50 text-shit-light hover:text-glass text-xs rounded transition-all border border-shit-brown/30"
+              title="Copy address"
+            >
+              📋
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
