@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "💩 Shitscreener",
-  description: "Track Solana token prices, volume, and liquidity",
+  title: "SHITSCREENER - Solana Token Analytics",
+  description: "Real-time memecoin tracking, liquidity analysis, and trend detection for Solana tokens.",
 };
 
 export default function RootLayout({
