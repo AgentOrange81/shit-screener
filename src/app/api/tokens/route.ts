@@ -1,5 +1,48 @@
 import { NextResponse } from 'next/server';
-import trackedTokens from '@/lib/tracked-tokens.json';
+
+interface GeckoTerminalPool {
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+    base_token_price_usd: string | null;
+    price_change_percentage: {
+      h24: string | null;
+      h1: string | null;
+      m5: string | null;
+    };
+    volume_usd: {
+      h24: string | null;
+      h6: string | null;
+      h1: string | null;
+      m5: string | null;
+    };
+    liquidity: {
+      usd: string | null;
+    };
+    market_cap_usd: string | null;
+    fdv_usd: string | null;
+    transactions: {
+      h24: { buys: number; sells: number };
+      h6: { buys: number; sells: number };
+      h1: { buys: number; sells: number };
+      m5: { buys: number; sells: number };
+    };
+    pair_address: string;
+    dex_id: string;
+    base_token: {
+      address: string;
+      name: string;
+      symbol: string;
+    };
+    quote_token: {
+      address: string;
+      name: string;
+      symbol: string;
+    };
+    pool_created_at: string;
+  };
+}
 
 interface EnrichedToken {
   symbol: string;
@@ -34,59 +77,63 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Get manually tracked tokens from JSON config
-    const tokenAddresses = trackedTokens.tokens.map(t => t.address).join(',');
-    
-    // Fetch live data from DexScreener for each tracked token
-    const dexRes = await fetch(
-      `https://api.dexscreener.com/latest/dex/tokens/${tokenAddresses}`,
+    // Fetch top pools from GeckoTerminal (sorted by 24h volume, descending)
+    const geckoRes = await fetch(
+      'https://api.geckoterminal.com/api/v2/networks/solana/pools?sort=-h24_volume_usd&page=1',
       { next: { revalidate: 10 } }
     );
-    
-    if (!dexRes.ok) {
-      throw new Error(`DexScreener API error: ${dexRes.status}`);
+
+    if (!geckoRes.ok) {
+      throw new Error(`GeckoTerminal API error: ${geckoRes.status}`);
     }
-    
-    const dexData = await dexRes.json();
-    const pairs: any[] = dexData.pairs || [];
-    
-    // Enrich with our tracked token metadata
-    const enrichedTokens: EnrichedToken[] = pairs.map((pair: any) => {
-      const tracked = trackedTokens.tokens.find(
-        t => t.address.toLowerCase() === pair.baseToken?.address?.toLowerCase()
-      );
-      
+
+    const geckoData = await geckoRes.json();
+    const pools: GeckoTerminalPool[] = geckoData.data || [];
+
+    // Transform to our enriched token format
+    const enrichedTokens: EnrichedToken[] = pools.map((pool: GeckoTerminalPool) => {
+      const attrs = pool.attributes;
+
       return {
-        symbol: tracked?.symbol || pair.baseToken?.symbol || '???',
-        name: tracked?.name || pair.baseToken?.name || 'Unknown',
-        address: pair.baseToken?.address || 'unknown',
-        priceUsd: pair.priceUsd || null,
-        priceNative: pair.priceNative || null,
-        priceChange24h: pair.priceChange?.h24 || 0,
-        priceChange1h: pair.priceChange?.h1 || 0,
-        priceChange5m: pair.priceChange?.m5 || 0,
-        volume24h: pair.volume?.h24 || 0,
-        volume6h: pair.volume?.h6 || 0,
-        volume1h: pair.volume?.h1 || 0,
-        volume5m: pair.volume?.m5 || 0,
-        liquidity: pair.liquidity?.usd || null,
-        marketCap: pair.marketCap || null,
-        fdv: pair.fdv || null,
-        buys24h: pair.txns?.h24?.buys || 0,
-        sells24h: pair.txns?.h24?.sells || 0,
-        buys6h: pair.txns?.h6?.buys || 0,
-        sells6h: pair.txns?.h6?.sells || 0,
-        buys1h: pair.txns?.h1?.buys || 0,
-        sells1h: pair.txns?.h1?.sells || 0,
-        buys5m: pair.txns?.m5?.buys || 0,
-        sells5m: pair.txns?.m5?.sells || 0,
-        pairAddress: pair.pairAddress || null,
-        dexId: pair.dexId || null,
-        pairCreatedAt: pair.pairCreatedAt || null,
+        symbol: attrs.base_token?.symbol || '???',
+        name: attrs.base_token?.name || 'Unknown',
+        address: attrs.base_token?.address || 'unknown',
+        priceUsd: attrs.base_token_price_usd,
+        priceNative: null, // GeckoTerminal doesn't provide native price directly
+        priceChange24h: attrs.price_change_percentage?.h24
+          ? parseFloat(attrs.price_change_percentage.h24)
+          : 0,
+        priceChange1h: attrs.price_change_percentage?.h1
+          ? parseFloat(attrs.price_change_percentage.h1)
+          : 0,
+        priceChange5m: attrs.price_change_percentage?.m5
+          ? parseFloat(attrs.price_change_percentage.m5)
+          : 0,
+        volume24h: attrs.volume_usd?.h24 ? parseFloat(attrs.volume_usd.h24) : 0,
+        volume6h: attrs.volume_usd?.h6 ? parseFloat(attrs.volume_usd.h6) : 0,
+        volume1h: attrs.volume_usd?.h1 ? parseFloat(attrs.volume_usd.h1) : 0,
+        volume5m: attrs.volume_usd?.m5 ? parseFloat(attrs.volume_usd.m5) : 0,
+        liquidity: attrs.liquidity?.usd ? parseFloat(attrs.liquidity.usd) : null,
+        marketCap: attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : null,
+        fdv: attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : null,
+        buys24h: attrs.transactions?.h24?.buys || 0,
+        sells24h: attrs.transactions?.h24?.sells || 0,
+        buys6h: attrs.transactions?.h6?.buys || 0,
+        sells6h: attrs.transactions?.h6?.sells || 0,
+        buys1h: attrs.transactions?.h1?.buys || 0,
+        sells1h: attrs.transactions?.h1?.sells || 0,
+        buys5m: attrs.transactions?.m5?.buys || 0,
+        sells5m: attrs.transactions?.m5?.sells || 0,
+        pairAddress: attrs.pair_address || null,
+        dexId: attrs.dex_id || null,
+        pairCreatedAt: attrs.pool_created_at ? new Date(attrs.pool_created_at).getTime() : null,
       };
     });
-    
-    return NextResponse.json(enrichedTokens);
+
+    // Filter out pools with no price data
+    const validTokens = enrichedTokens.filter(t => t.priceUsd && parseFloat(t.priceUsd) > 0);
+
+    return NextResponse.json(validTokens);
   } catch (error) {
     console.error('Error fetching tokens:', error);
     return NextResponse.json(
