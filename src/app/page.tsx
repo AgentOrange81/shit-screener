@@ -181,35 +181,35 @@ export default function Home() {
             <div className="overflow-x-auto bg-shit-brown/10 border border-shit-brown/30 rounded-xl shadow-lifted">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-shit-brown/30 text-left text-shit-medium text-sm">
-                    <th className="py-3 px-2">Name</th>
-                    <th className="py-3 px-2">Symbol</th>
+                  <tr className="border-b border-shit-brown/30 text-left text-shit-medium text-xs md:text-sm">
+                    <th className="py-3 px-2 md:px-4">Name</th>
+                    <th className="py-3 px-2 md:px-4">Symbol</th>
                     <th 
-                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      className="py-3 px-2 md:px-4 cursor-pointer hover:text-glass transition-colors"
                       onClick={() => handleSort('priceUsd')}
                     >
                       Price <SortIcon active={sortKey === 'priceUsd'} dir={sortDir} />
                     </th>
                     <th 
-                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      className="py-3 px-2 md:px-4 cursor-pointer hover:text-glass transition-colors"
                       onClick={() => handleSort('priceChange24h')}
                     >
                       24h % <SortIcon active={sortKey === 'priceChange24h'} dir={sortDir} />
                     </th>
                     <th 
-                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      className="py-3 px-2 md:px-4 cursor-pointer hover:text-glass transition-colors hidden sm:table-cell"
                       onClick={() => handleSort('volume24h')}
                     >
                       Volume <SortIcon active={sortKey === 'volume24h'} dir={sortDir} />
                     </th>
                     <th 
-                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      className="py-3 px-2 md:px-4 cursor-pointer hover:text-glass transition-colors hidden md:table-cell"
                       onClick={() => handleSort('liquidity')}
                     >
                       Liquidity <SortIcon active={sortKey === 'liquidity'} dir={sortDir} />
                     </th>
                     <th 
-                      className="py-3 px-2 cursor-pointer hover:text-glass transition-colors"
+                      className="py-3 px-2 md:px-4 cursor-pointer hover:text-glass transition-colors hidden lg:table-cell"
                       onClick={() => handleSort('marketCap')}
                     >
                       Market Cap <SortIcon active={sortKey === 'marketCap'} dir={sortDir} />
@@ -223,18 +223,18 @@ export default function Home() {
                       className="border-b border-shit-brown/20 hover:bg-shit-brown/5 transition-colors cursor-pointer"
                       onClick={() => window.location.href = `/token/${token.address}`}
                     >
-                      <td className="py-3 px-2">
-                        <div className="font-bold text-cream">{token.name}</div>
+                      <td className="py-3 px-2 md:px-4">
+                        <div className="font-bold text-cream text-sm md:text-base">{token.name}</div>
                         <div className="text-shit-medium text-xs font-mono">{token.address.slice(0, 8)}...</div>
                       </td>
-                      <td className="py-3 px-2 font-bold text-gold">{token.symbol}</td>
-                      <td className="py-3 px-2 text-cream">{formatPrice(token.priceUsd)}</td>
-                      <td className={`py-3 px-2 font-bold ${token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className="py-3 px-2 md:px-4 font-bold text-gold text-sm md:text-base">{token.symbol}</td>
+                      <td className="py-3 px-2 md:px-4 text-cream text-sm md:text-base">{formatPrice(token.priceUsd)}</td>
+                      <td className={`py-3 px-2 md:px-4 font-bold text-sm md:text-base ${token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {token.priceChange24h.toFixed(2)}%
                       </td>
-                      <td className="py-3 px-2 text-cream">{formatNumber(token.volume24h)}</td>
-                      <td className="py-3 px-2 text-cream">{formatNumber(token.liquidity)}</td>
-                      <td className="py-3 px-2 text-cream">{formatNumber(token.marketCap)}</td>
+                      <td className="py-3 px-2 md:px-4 text-cream text-sm md:text-base hidden sm:table-cell">{formatNumber(token.volume24h)}</td>
+                      <td className="py-3 px-2 md:px-4 text-cream text-sm md:text-base hidden md:table-cell">{formatNumber(token.liquidity)}</td>
+                      <td className="py-3 px-2 md:px-4 text-cream text-sm md:text-base hidden lg:table-cell">{formatNumber(token.marketCap)}</td>
                     </tr>
                   ))}
                 </tbody>
