@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     if (tokenRes.ok) {
       const tokenData = await tokenRes.json();
       // Get the most liquid pool (top_pools[0])
-      const topPool = tokenData.included?.find((i: any) => i.type === 'pool');
+      const topPool = tokenData.included?.find((i: { type?: string }) => i.type === 'pool');
       if (topPool) {
         poolAddress = topPool.id.replace('solana_', '');
       }
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
           const basePrice = parseFloat(pair?.priceUsd || '0.01') || 0.01;
           return NextResponse.json({ candles: generateFallbackCandles(basePrice, timeframe) });
         }
-      } catch (e) {
+      } catch {
         // Ignore, return empty
       }
       return NextResponse.json({ candles: [] });
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
     const candlesData = await candlesRes.json();
     
     // Transform GeckoTerminal candle format to lightweight-charts format
-    const candles: Candle[] = (candlesData.data.attributes.ohlcv_list || []).map((c: any[]) => ({
+    const candles: Candle[] = (candlesData.data.attributes.ohlcv_list || []).map((c: [number, string, string, string, string, string]) => ({
       timestamp: c[0],
       open: parseFloat(c[1]),
       high: parseFloat(c[2]),
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
         const basePrice = parseFloat(pair?.priceUsd || '0.01') || 0.01;
         return NextResponse.json({ candles: generateFallbackCandles(basePrice, timeframe) });
       }
-    } catch (e) {
+    } catch {
       // Ignore, return empty
     }
     

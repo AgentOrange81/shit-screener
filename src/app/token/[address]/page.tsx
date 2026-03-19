@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, use } from 'react';
+import Link from 'next/link';
 import { createChart, CandlestickSeries, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts';
 
 interface Token {
@@ -169,7 +170,6 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
       },
     });
 
-    // @ts-ignore - lightweight-charts v5 typing issue
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#d4af37', // gold
       downColor: '#ef4444', // red-500
@@ -228,12 +228,12 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
           <div className="text-6xl mb-4">💥</div>
           <h2 className="text-xl font-bold mb-2 text-cream">Token Not Found</h2>
           <p className="text-shit-medium mb-6">{error || 'Token not found'}</p>
-          <a
-            href="/tokens"
+          <Link
+            href="/"
             className="px-6 py-3 bg-glass hover:bg-gold text-shit-darker font-bold rounded-xl transition-all shadow-glow inline-block"
           >
             ← Back to Tokens
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -242,9 +242,9 @@ export default function TokenPage({ params }: { params: Promise<{ address: strin
   return (
     <div className="min-h-screen bg-shit-darker p-6">
       <div className="max-w-4xl mx-auto">
-        <a href="/tokens" className="text-glass hover:text-gold mb-4 inline-block transition-colors">
+        <Link href="/" className="text-glass hover:text-gold mb-4 inline-block transition-colors">
           ← Back to Tokens
-        </a>
+        </Link>
         
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-cream">{token.name}</h1>

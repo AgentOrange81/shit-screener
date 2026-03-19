@@ -150,11 +150,11 @@ export async function GET() {
         
         if (dexRes.ok) {
           const dexData = await dexRes.json();
-          const tokens: any[] = dexData.tokens || [];
-          
+          const dexTokens: Array<{ address?: string; info?: { imageUrl?: string; telegram?: string; twitter?: string; website?: string } }> = dexData.tokens || [];
+
           // Create lookup map
           const socialMap = new Map<string, { imageUrl?: string; telegram?: string; twitter?: string; website?: string }>();
-          tokens.forEach((t: any) => {
+          dexTokens.forEach((t) => {
             if (t?.address) {
               socialMap.set(t.address, {
                 imageUrl: t.info?.imageUrl,
@@ -164,9 +164,9 @@ export async function GET() {
               });
             }
           });
-          
+
           // Merge social data into tokens
-          validTokens.forEach((token, i) => {
+          validTokens.forEach((token) => {
             const social = socialMap.get(token.address);
             if (social) {
               token.info = social;
