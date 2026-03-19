@@ -364,6 +364,13 @@ export default function Home() {
             />
           </div>
 
+          {/* Token Count */}
+          <div className="mb-6 text-center">
+            <p className="text-sm text-muted">
+              Showing {sortedTokens.length} token{sortedTokens.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
           {sortedTokens.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🐸</div>
