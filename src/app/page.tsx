@@ -245,16 +245,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-shit-darker">
-      {/* Navbar */}
-      <nav className="bg-[#3d2f21]/95 backdrop-blur-md text-[#f5f0e6] px-4 py-3 md:px-6 md:py-4 sticky top-0 z-50 border-b border-[#5c4a32]/50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-xl md:text-2xl font-bold flex items-center gap-2 group">
-            <span className="text-2xl md:text-3xl group-hover:animate-bounce inline-block">💩</span> 
-            <span style={{ color: '#f4d03f' }}>SCREENER</span>
-          </Link>
-        </div>
-      </section>
-
       {/* Hero */}
       <section className="bg-gradient-shit text-cream py-12 md:py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">

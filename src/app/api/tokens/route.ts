@@ -131,7 +131,7 @@ export async function GET() {
         buys5m: attrs.transactions?.m5?.buys || 0,
         sells5m: attrs.transactions?.m5?.sells || 0,
         pairAddress: attrs.pair_address || null,
-        dexId: attrs.dex_id || null,
+        dexId: pool.relationships?.dex?.data?.id || null,
         pairCreatedAt: attrs.pool_created_at ? new Date(attrs.pool_created_at).getTime() : null,
       };
     });
@@ -150,13 +150,19 @@ export async function GET() {
         
         if (dexRes.ok) {
           const dexData = await dexRes.json();
-          const dexTokens: Array<{ address?: string; info?: { imageUrl?: string; telegram?: string; twitter?: string; website?: string } }> = dexData.tokens || [];
+          const dexTokens: Array<{
+          address?: string;
+          baseToken?: { name?: string; symbol?: string };
+          info?: { imageUrl?: string; telegram?: string; twitter?: string; website?: string };
+        }> = Array.isArray(dexData) ? dexData : dexData.tokens || [];
 
           // Create lookup map
-          const socialMap = new Map<string, { imageUrl?: string; telegram?: string; twitter?: string; website?: string }>();
+          const socialMap = new Map<string, { name?: string; symbol?: string; imageUrl?: string; telegram?: string; twitter?: string; website?: string }>();
           dexTokens.forEach((t) => {
             if (t?.address) {
               socialMap.set(t.address, {
+                name: t.baseToken?.name,
+                symbol: t.baseToken?.symbol,
                 imageUrl: t.info?.imageUrl,
                 telegram: t.info?.telegram,
                 twitter: t.info?.twitter,
@@ -165,11 +171,18 @@ export async function GET() {
             }
           });
 
-          // Merge social data into tokens
+          // Merge DexScreener data into tokens (names, symbols, social)
           validTokens.forEach((token) => {
-            const social = socialMap.get(token.address);
-            if (social) {
-              token.info = social;
+            const dex = socialMap.get(token.address);
+            if (dex) {
+              if (dex.name) token.name = dex.name;
+              if (dex.symbol) token.symbol = dex.symbol;
+              token.info = {
+                imageUrl: dex.imageUrl,
+                telegram: dex.telegram,
+                twitter: dex.twitter,
+                website: dex.website,
+              };
             }
           });
         }
